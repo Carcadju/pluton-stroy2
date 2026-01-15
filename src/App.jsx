@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import SketchProjectPage from './pages/SketchProjectPage';
+import PsdPage from './pages/PsdPage';
+import ConstructionSupportPage from './pages/ConstructionSupportPage';
+import MtfSolutionsPage from './pages/MtfSolutionsPage';
+import FeedlotsPage from './pages/FeedlotsPage';
+import FeedMillsPage from './pages/FeedMillsPage';
 import {
   Menu, X, Phone, Mail, MapPin, ChevronRight, CheckCircle,
   Tractor, Sprout, Milk, Settings, ArrowRight, Activity,
-  Droplet, Truck, Users, Globe, ChevronDown, Calculator, Building2
+  Droplet, Truck, Users, Globe, ChevronDown, Calculator, Building2, HardHat
 } from 'lucide-react';
+import { TRANSLATIONS } from './translations';
 
 // --- Calculator Configuration ---
 const CALC_CONSTANTS = {
@@ -13,12 +20,57 @@ const CALC_CONSTANTS = {
   feedPerCowUnitYear: 20.5, // Тонн корма (силос+сенаж) на 1 корову+шлейф в год
 };
 
+// --- Cow Component ---
+const Cow = ({ frameIndex }) => {
+  // Use Vite's URL resolution to guarantee correct paths from src/assets
+  const cowImages = [
+    new URL('./assets/cow1.png', import.meta.url).href,
+    new URL('./assets/cow2.png', import.meta.url).href,
+    new URL('./assets/cow3.png', import.meta.url).href,
+    new URL('./assets/cow4.png', import.meta.url).href,
+    new URL('./assets/cow5.png', import.meta.url).href,
+    new URL('./assets/cow6.png', import.meta.url).href,
+    new URL('./assets/cow7.png', import.meta.url).href,
+    new URL('./assets/cow8.png', import.meta.url).href
+  ];
+
+  // Safety check
+  const currentFrame = cowImages[frameIndex] ? frameIndex : 0;
+
+  return (
+    <div className="relative w-full h-[500px] md:h-[600px] flex items-center justify-center group cursor-pointer">
+      {/* The Cow Image - Centered and constrained sizing */}
+      <div className="relative w-full h-full flex items-center justify-center">
+        <img
+          src={cowImages[currentFrame]}
+          alt="Cow"
+          className="max-h-[80%] md:max-h-[90%] w-auto object-contain transition-none select-none mix-blend-multiply"
+        />
+      </div>
+    </div>
+  );
+};
+
 const AgroTechApp = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [activeLang, setActiveLang] = useState('RU');
+  const [currentPage, setCurrentPage] = useState('home');
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ name: '', phone: '', message: '' });
+
+  // Translation hook
+  const t = TRANSLATIONS[activeLang] || TRANSLATIONS.RU;
+
+  const STATS = {
+    RU: { years: 'Лет на рынке', projects: 'Реализованных проектов', support: 'Сервисная поддержка', quality: 'Гарантия качества' },
+    KZ: { years: 'Нарықтағы жылдар', projects: 'Іске асырылған жобалар', support: 'Сервистік қолдау', quality: 'Сапа кепілдігі' },
+    EN: { years: 'Years on Market', projects: 'Completed Projects', support: 'Service Support', quality: 'Quality Assurance' }
+  };
+  const statsT = STATS[activeLang] || STATS.RU;
+  const detailsText = { RU: 'Подробнее', KZ: 'Толығырақ', EN: 'Details' };
+
+  // const [isGrazing, setIsGrazing] = useState(false); // Replaced by cowFrame
 
   // Simple "Estimate" Calculator State
   const [cowsInput, setCowsInput] = useState(800);
@@ -40,13 +92,38 @@ const AgroTechApp = () => {
     });
   }, [cowsInput]);
 
-  // Handle scroll for navbar styling
+  // Handle scroll for navbar styling and Cow Animation
+  const [cowFrame, setCowFrame] = useState(0);
+
+  // Handle scroll for navbar styling and Cow Animation frame
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      const scrollY = window.scrollY;
+      setIsScrolled(scrollY > 50);
+
+      // Cow Animation Logic:
+      // User requested: "6th click cow1, 7th click cow2..."
+      // Assuming 1 click/scroll step ≈ 100px.
+      // Start animating around 600px -> frame 0.
+
+      const startTrigger = 400;
+      const step = 100; // Pixels per frame change
+
+      if (scrollY > startTrigger) {
+        // Calculate frame based on how far past startTrigger we are
+        // Cycle 0-7
+        const rawFrame = Math.floor((scrollY - startTrigger) / step);
+        const frame = Math.abs(rawFrame % 8);
+        setCowFrame(frame);
+      } else {
+        setCowFrame(0);
+      }
     };
+
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    }
   }, []);
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
@@ -60,26 +137,14 @@ const AgroTechApp = () => {
 
   const heroSlides = [
     {
-      title: <>Комплексное проектирование <br /><span className="text-green-400">молочно-товарных ферм</span></>,
-      subtitle: 'Инновации в Агробизнесе',
-      features: [
-        'Расчет и консультация технологических решений',
-        'Эскизный проект и мастер план',
-        'Получение разрешений на строительство',
-        'Разработка и согласование ПСД',
-        'Сопровождение при строительстве'
-      ]
+      title: <>{t.hero.slide1.title}</>,
+      subtitle: t.hero.slide1.subtitle,
+      features: t.hero.slide1.features
     },
     {
-      title: <>Проектирование <br /><span className="text-green-400">откормочных площадок</span></>,
-      subtitle: 'Эффективные решения',
-      features: [
-        'Расчет и консультация технологических решений',
-        'Эскизный проект и мастер план',
-        'Получение разрешений на строительство',
-        'Разработка и согласование ПСД',
-        'Сопровождение при строительстве'
-      ]
+      title: <>{t.hero.slide2.title}</>,
+      subtitle: t.hero.slide2.subtitle,
+      features: t.hero.slide2.features
     }
   ];
 
@@ -93,101 +158,131 @@ const AgroTechApp = () => {
   }, []);
 
   const navLinks = [
-    { name: 'Главная', href: '#home' },
-    { name: 'О компании', href: '#about' },
+    { name: t.nav.home, href: '#home' },
+    { name: t.nav.about, href: '#about' },
     {
-      name: 'Расчет и проектирования МТФ',
+      name: t.nav.calc,
       href: '#solutions',
       children: [
-        { name: 'Эскизный проект и мастер план', href: '#sketch-project' },
-        { name: 'Разработка и согласования ПСД', href: '#psd' },
-        { name: 'Сопровождение при строительстве', href: '#construction-support' },
-        { name: 'Решения для МТФ', href: '#mtf-solutions' }
+        { name: t.nav.sketch, href: '#sketch-project' },
+        { name: t.nav.psd, href: '#psd' },
+        { name: t.nav.support, href: '#construction-support' },
+        { name: t.nav.solutions, href: '#mtf-solutions' }
       ]
     },
     {
-      name: 'Прочие сельхозобъекты',
+      name: t.nav.other,
       href: '#other-solutions',
       children: [
-        { name: 'Откормочные площадки для КРС и МРС', href: '#feedlots' },
-        { name: 'Кормоцехи', href: '#feed-mills' }
+        { name: t.nav.feedlots, href: '#feedlots' },
+        { name: t.nav.feedmills, href: '#feed-mills' }
       ]
     },
-    { name: 'Услуги', href: '#services' },
-    { name: 'Калькулятор', href: '#calculator' },
-    { name: 'Контакты', href: '#contacts' },
+    { name: t.nav.services, href: '#services' },
+    { name: t.nav.calculator, href: '#calculator' },
+    { name: t.nav.contacts, href: '#contacts' },
   ];
 
   const solutions = [
     {
       id: 1,
-      title: 'Эскизный проект и мастер план',
-      desc: 'Разработка концепции и генерального плана будущего комплекса с учетом всех технологических требований и розы ветров.',
+      title: t.solutions.cards[0].title,
+      desc: t.solutions.cards[0].desc,
       icon: <Building2 size={40} className="text-blue-600" />,
-      image: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&q=80&w=800'
+      image: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&q=80&w=800',
+      action: () => setCurrentPage('sketch')
     },
     {
       id: 2,
-      title: 'Разработка и согласования ПСД',
-      desc: 'Полный пакет проектно-сметной документации (ПСД), прохождение экспертизы и получение всех разрешений.',
+      title: t.solutions.cards[1].title,
+      desc: t.solutions.cards[1].desc,
       icon: <Settings size={40} className="text-green-600" />,
-      image: 'https://images.unsplash.com/photo-1581094794320-c914639972b9?auto=format&fit=crop&q=80&w=800'
+      image: new URL('./assets/photo1.png', import.meta.url).href,
+      action: () => setCurrentPage('psd')
     },
     {
       id: 3,
-      title: 'Сопровождение при строительстве',
-      desc: 'Авторский и технический надзор. Контроль качества работ и соблюдения сроков на всех этапах строительства.',
-      icon: <Tractor size={40} className="text-amber-600" />,
-      image: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&q=80&w=800'
+      title: t.solutions.cards[2].title,
+      desc: t.solutions.cards[2].desc,
+      icon: <HardHat size={40} className="text-orange-600" />,
+      image: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?auto=format&fit=crop&q=80&w=800',
+      action: () => setCurrentPage('construction')
     },
     {
       id: 4,
-      title: 'Решения для МТФ',
-      desc: 'Комплексное оснащение ферм: доильные залы, стойловое оборудование, системы навозоудаления и вентиляции.',
+      title: t.solutions.cards[3].title,
+      desc: t.solutions.cards[3].desc,
       icon: <Milk size={40} className="text-emerald-500" />,
-      image: 'https://images.unsplash.com/photo-1527153857715-390862d703d5?auto=format&fit=crop&q=80&w=800'
+      image: new URL('./assets/photo2.png', import.meta.url).href,
+      action: () => setCurrentPage('mtf-solutions')
     }
   ];
 
   const otherSolutions = [
     {
       id: 1,
-      title: 'Откормочные площадки для КРС и МРС',
-      desc: 'Профессиональное проектирование загонов, систем поения и кормления для эффективного откорма.',
+      title: t.otherSolutions.cards[0].title,
+      desc: t.otherSolutions.cards[0].desc,
       icon: <Tractor size={40} className="text-amber-600" />,
-      image: 'https://images.unsplash.com/photo-1516467508483-a72120615603?auto=format&fit=crop&q=80&w=800'
+      image: new URL('./assets/photo3.jpeg', import.meta.url).href,
+      action: () => setCurrentPage('feedlots')
     },
     {
       id: 2,
-      title: 'Кормоцехи',
-      desc: 'Автоматизированные линии приготовления кормов: дробление, смешивание и грануляция.',
+      title: t.otherSolutions.cards[1].title,
+      desc: t.otherSolutions.cards[1].desc,
       icon: <Settings size={40} className="text-orange-600" />,
-      image: 'https://images.unsplash.com/photo-1627920155050-2bc1586bd27f?auto=format&fit=crop&q=80&w=800'
+      image: new URL('./assets/photo4.jpeg', import.meta.url).href,
+      action: () => setCurrentPage('feed-mills')
     }
   ];
 
   const services = [
     {
-      title: 'Проектирование',
+      title: t.services.cards[0].title,
       icon: <Settings size={32} />,
-      desc: 'Разработка технологических проектов ферм с нуля, включая генпланы и инженерные сети.'
+      desc: t.services.cards[0].desc
     },
     {
-      title: 'Поставка оборудования',
+      title: t.services.cards[1].title,
       icon: <Truck size={32} />,
-      desc: 'Официальный дилер ведущих мировых брендов. Прямые поставки из Европы и Израиля.'
+      desc: t.services.cards[1].desc
     },
     {
-      title: 'Монтаж и сервис',
+      title: t.services.cards[2].title,
       icon: <Tractor size={32} />,
-      desc: 'Команда сертифицированных инженеров. Монтаж, пуско-наладка и обслуживание 24/7.'
+      desc: t.services.cards[2].desc
     },
     {
-      title: 'Консалтинг',
+      title: t.services.cards[3].title,
       icon: <Users size={32} />,
-      desc: 'Аудит существующих хозяйств, обучение персонала и внедрение эффективных протоколов.'
+      desc: t.services.cards[3].desc
     }
   ];
+
+  if (currentPage === 'sketch') {
+    return <SketchProjectPage lang={activeLang} onBack={() => setCurrentPage('home')} />;
+  }
+
+  if (currentPage === 'psd') {
+    return <PsdPage lang={activeLang} onBack={() => setCurrentPage('home')} />;
+  }
+
+  if (currentPage === 'construction') {
+    return <ConstructionSupportPage lang={activeLang} onBack={() => setCurrentPage('home')} />;
+  }
+
+  if (currentPage === 'mtf-solutions') {
+    return <MtfSolutionsPage lang={activeLang} onBack={() => setCurrentPage('home')} />;
+  }
+
+  if (currentPage === 'feedlots') {
+    return <FeedlotsPage lang={activeLang} onBack={() => setCurrentPage('home')} />;
+  }
+
+  if (currentPage === 'feed-mills') {
+    return <FeedMillsPage lang={activeLang} onBack={() => setCurrentPage('home')} />;
+  }
 
   return (
     <div className="font-sans text-slate-800 bg-slate-50 min-h-screen flex flex-col">
@@ -196,10 +291,10 @@ const AgroTechApp = () => {
         <div className="container mx-auto px-4 flex justify-between items-center">
           <div className="flex space-x-6">
             <span className="flex items-center hover:text-white cursor-pointer transition">
-              <Phone size={14} className="mr-2" /> +7 777 935 8855
+              <Phone size={14} className="mr-2" /> +7 707 935 88 55
             </span>
             <span className="flex items-center hover:text-white cursor-pointer transition">
-              <Mail size={14} className="mr-2" /> info@plutonstroy.kz
+              <Mail size={14} className="mr-2" /> too-plutonstroy@mail.ru
             </span>
           </div>
           <div className="flex items-center space-x-4">
@@ -225,8 +320,12 @@ const AgroTechApp = () => {
       <nav className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white shadow-md py-2' : 'bg-white/95 backdrop-blur-sm py-4'}`}>
         <div className="container mx-auto px-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <div className="bg-green-600 p-2 rounded-lg">
-              <Sprout size={24} className="text-white" />
+            <div className="w-20 h-20 flex items-center justify-center">
+              <img
+                src={new URL('./assets/logo.png', import.meta.url).href}
+                alt="PlutonStroy Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
             <span className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
               Pluton<span className="text-green-600">Stroy</span>
@@ -310,7 +409,7 @@ const AgroTechApp = () => {
                 onClick={() => { setShowModal(true); setIsMenuOpen(false); }}
                 className="bg-green-600 text-white py-3 rounded-lg font-bold text-center w-full"
               >
-                Оставить заявку
+                {t.nav.request}
               </button>
             </div>
           </div>
@@ -347,10 +446,10 @@ const AgroTechApp = () => {
 
               <div className="flex flex-col sm:flex-row gap-4">
                 <button onClick={() => setShowModal(true)} className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg font-bold text-lg transition flex items-center justify-center">
-                  Получить консультацию <ChevronRight className="ml-2" />
+                  {t.hero.consult} <ChevronRight className="ml-2" />
                 </button>
                 <a href="#solutions" className="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white border border-white/30 px-8 py-4 rounded-lg font-bold text-lg transition flex items-center justify-center">
-                  Решения для МТФ
+                  {t.hero.solutions}
                 </a>
               </div>
             </div>
@@ -370,26 +469,18 @@ const AgroTechApp = () => {
         </div>
       </header>
 
-      {/* Stats Section */}
-      <section className="bg-white py-10 shadow-sm relative z-20 -mt-10 mx-4 sm:mx-10 rounded-xl border border-slate-100">
-        <div className="container mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-slate-100">
-            <div className="p-4">
-              <div className="text-3xl sm:text-4xl font-bold text-green-400 mb-2">25+</div>
-              <div className="text-slate-500 text-sm uppercase font-semibold">Лет на рынке</div>
-            </div>
-            <div className="p-4">
-              <div className="text-3xl sm:text-4xl font-bold text-blue-600 mb-2">50+</div>
-              <div className="text-slate-500 text-sm uppercase font-semibold">Реализованных проектов</div>
-            </div>
-            <div className="p-4">
-              <div className="text-3xl sm:text-4xl font-bold text-green-400 mb-2">24/7</div>
-              <div className="text-slate-500 text-sm uppercase font-semibold">Сервисная поддержка</div>
-            </div>
-            <div className="p-4">
-              <div className="text-3xl sm:text-4xl font-bold text-blue-600 mb-2">100%</div>
-              <div className="text-slate-500 text-sm uppercase font-semibold">Гарантия качества</div>
-            </div>
+      {/* Partners Section (Replaces Stats) */}
+      <section className="bg-white py-12 shadow-sm relative z-20 -mt-10 mx-4 sm:mx-10 rounded-xl border border-slate-100">
+        <div className="container mx-auto px-4 text-center">
+          <h3 className="text-xl md:text-2xl font-bold text-slate-800 mb-8 max-w-3xl mx-auto">
+            {t.partners.title}
+          </h3>
+          <div className="flex flex-wrap justify-center items-center gap-8 md:gap-16 grayscale opacity-70 hover:grayscale-0 hover:opacity-100 transition-all duration-300">
+            <img src={new URL('./assets/111.png', import.meta.url).href} alt="Afimilk" className="h-12 md:h-16 object-contain" />
+            <img src={new URL('./assets/222.png', import.meta.url).href} alt="BouMatic" className="h-12 md:h-16 object-contain" />
+            <img src={new URL('./assets/333.png', import.meta.url).href} alt="DeLaval" className="h-12 md:h-16 object-contain" />
+            <img src={new URL('./assets/444.png', import.meta.url).href} alt="GEA" className="h-12 md:h-16 object-contain" />
+            <img src={new URL('./assets/555.png', import.meta.url).href} alt="Lely" className="h-12 md:h-16 object-contain" />
           </div>
         </div>
       </section>
@@ -399,32 +490,16 @@ const AgroTechApp = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center gap-12">
             <div className="md:w-1/2">
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl">
-                <img
-                  src="https://images.unsplash.com/photo-1595244585145-c8e6a2b212f7?auto=format&fit=crop&q=80&w=1000"
-                  alt="Modern Cow Farm"
-                  className="w-full h-auto object-cover"
-                />
-                <div className="absolute bottom-0 left-0 bg-green-600 text-white p-6 rounded-tr-2xl">
-                  <p className="font-bold text-xl">Официальный дилер</p>
-                  <p className="opacity-90">Ведущих мировых брендов</p>
-                </div>
-              </div>
+              <Cow frameIndex={cowFrame} />
             </div>
             <div className="md:w-1/2">
-              <h4 className="text-green-400 font-bold uppercase tracking-wide mb-2">О компании PlutonStroy</h4>
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">Ваш надежный партнер в молочном бизнесе</h2>
+              <h4 className="text-green-400 font-bold uppercase tracking-wide mb-2">{t.about.label}</h4>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">{t.about.title}</h2>
               <p className="text-slate-600 mb-6 leading-relaxed">
-                PlutonStroy — это инжиниринговая компания, предоставляющая полный спектр услуг для животноводства в Казахстане.
-                Мы не просто продаем оборудование, мы создаем эффективные экосистемы для вашего бизнеса.
+                {t.about.desc}
               </p>
               <ul className="space-y-4 mb-8">
-                {[
-                  'Комплексное проектирование и строительство ферм',
-                  'Внедрение систем автоматизации и управления стадом',
-                  'Обучение персонала современным технологиям',
-                  'Собственный склад запчастей и сервисная служба'
-                ].map((item, idx) => (
+                {t.about.list.map((item, idx) => (
                   <li key={idx} className="flex items-start">
                     <CheckCircle className="text-green-500 mr-3 mt-1 flex-shrink-0" size={20} />
                     <span className="text-slate-700 font-medium">{item}</span>
@@ -432,7 +507,7 @@ const AgroTechApp = () => {
                 ))}
               </ul>
               <button className="text-green-400 font-bold border-b-2 border-green-600 pb-1 hover:text-green-800 transition">
-                Узнать больше о нас
+                {t.about.more}
               </button>
             </div>
           </div>
@@ -443,10 +518,9 @@ const AgroTechApp = () => {
       <section id="solutions" className="py-20 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Расчет и проектирования МТФ</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">{t.solutions.title}</h2>
             <p className="text-slate-600 max-w-2xl mx-auto">
-              Мы предлагаем передовые технологии, которые делают производство молока рентабельным,
-              а жизнь животных — комфортной.
+              {t.solutions.desc}
             </p>
           </div>
 
@@ -469,8 +543,15 @@ const AgroTechApp = () => {
                   <p className="text-slate-600 text-sm mb-4 line-clamp-3">
                     {item.desc}
                   </p>
-                  <a href="#" className="inline-flex items-center text-green-400 font-semibold text-sm hover:underline">
-                    Подробнее <ArrowRight size={16} className="ml-1" />
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (item.action) item.action();
+                    }}
+                    className="inline-flex items-center text-green-400 font-semibold text-sm hover:underline"
+                  >
+                    {detailsText[activeLang]} <ArrowRight size={16} className="ml-1" />
                   </a>
                 </div>
               </div>
@@ -483,9 +564,9 @@ const AgroTechApp = () => {
       <section id="other-solutions" className="py-20 bg-slate-900 text-white border-t border-slate-800">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Прочие сельхозобъекты</h2>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">{t.otherSolutions.title}</h2>
             <p className="text-slate-400 max-w-2xl mx-auto">
-              Эффективные решения для различных направлений животноводства
+              {t.otherSolutions.desc}
             </p>
           </div>
 
@@ -508,7 +589,14 @@ const AgroTechApp = () => {
                   <p className="text-slate-600 mb-4 leading-relaxed">
                     {item.desc}
                   </p>
-                  <a href="#" className="inline-flex items-center text-amber-600 font-semibold hover:underline">
+                  <a
+                    href="#"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (item.action) item.action();
+                    }}
+                    className="inline-flex items-center text-amber-600 font-semibold hover:underline"
+                  >
                     Подробнее <ArrowRight size={16} className="ml-1" />
                   </a>
                 </div>
@@ -528,11 +616,11 @@ const AgroTechApp = () => {
         <div className="container mx-auto px-4 relative z-10">
           <div className="flex flex-col md:flex-row justify-between items-end mb-12">
             <div>
-              <h4 className="text-green-600 font-bold uppercase tracking-wide mb-2">Наши услуги</h4>
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900">Полный цикл поддержки</h2>
+              <h4 className="text-green-600 font-bold uppercase tracking-wide mb-2">{t.services.label}</h4>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900">{t.services.title}</h2>
             </div>
             <button onClick={() => setShowModal(true)} className="mt-6 md:mt-0 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-green-600 px-6 py-2 rounded-lg transition shadow-sm">
-              Скачать презентацию
+              {t.services.download}
             </button>
           </div>
 
@@ -560,11 +648,10 @@ const AgroTechApp = () => {
           {/* Header */}
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-5xl font-bold text-slate-800 mb-3">
-              Проектирование молочных комплексов
+              {t.calcSection.title}
             </h2>
             <p className="text-slate-600 text-lg max-w-2xl mx-auto">
-              Оцените масштаб вашего будущего проекта за 30 секунд.
-              Расчет инфраструктуры на основе нормативов НТП 17-99.
+              {t.calcSection.desc}
             </p>
           </div>
 
@@ -574,8 +661,8 @@ const AgroTechApp = () => {
               <div className="backdrop-blur-md bg-white/95 border border-white/50 shadow-xl rounded-3xl p-8 h-full flex flex-col justify-center">
                 <div className="mb-8">
                   <label className="block text-slate-700 font-bold text-xl mb-4">
-                    Планируемое поголовье
-                    <span className="block text-sm font-normal text-slate-500 mt-1">Только фуражные коровы</span>
+                    {t.calcSection.labelCrow}
+                    <span className="block text-sm font-normal text-slate-500 mt-1">{t.calcSection.subLabelCrow}</span>
                   </label>
 
                   <div className="flex items-center gap-4 mb-6">
@@ -606,13 +693,12 @@ const AgroTechApp = () => {
                 <div className="bg-emerald-50 rounded-xl p-5 border border-emerald-100">
                   <h4 className="font-bold text-emerald-800 mb-2 flex items-center">
                     <Calculator size={18} className="mr-2" />
-                    Что мы посчитаем?
+                    {t.calcSection.whatWeCalc}
                   </h4>
                   <ul className="text-sm text-emerald-700 space-y-2">
-                    <li>• Общее стадо с учетом шлейфа</li>
-                    <li>• Требуемые площади коровников</li>
-                    <li>• Объем навозохранилищ (6 мес.)</li>
-                    <li>• Объем кормовых центров</li>
+                    {t.calcSection.list.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
                   </ul>
                 </div>
               </div>
@@ -625,49 +711,49 @@ const AgroTechApp = () => {
                 {/* Card 1 */}
                 <div className="backdrop-blur-md bg-white/95 border border-slate-100 shadow-xl rounded-2xl p-6 border-l-4 border-l-blue-500 hover:-translate-y-1 transition duration-300">
                   <div className="flex justify-between items-start mb-2">
-                    <div className="text-slate-500 font-medium text-sm uppercase tracking-wider">Общее стадо</div>
+                    <div className="text-slate-500 font-medium text-sm uppercase tracking-wider">{t.calcSection.cards.herd}</div>
                     <Users className="text-blue-200" size={28} />
                   </div>
                   <div className="text-3xl font-bold text-slate-800 mb-1">
                     {calcResults.totalHerd.toLocaleString()} <span className="text-lg text-slate-400 font-normal">гол.</span>
                   </div>
-                  <p className="text-xs text-slate-500">Коровы + молодняк (шлейф)</p>
+                  <p className="text-xs text-slate-500">{t.calcSection.cards.herdSub}</p>
                 </div>
 
                 {/* Card 2 */}
                 <div className="backdrop-blur-md bg-white/95 border border-slate-100 shadow-xl rounded-2xl p-6 border-l-4 border-l-purple-500 hover:-translate-y-1 transition duration-300">
                   <div className="flex justify-between items-start mb-2">
-                    <div className="text-slate-500 font-medium text-sm uppercase tracking-wider">Площадь зданий</div>
+                    <div className="text-slate-500 font-medium text-sm uppercase tracking-wider">{t.calcSection.cards.area}</div>
                     <Building2 className="text-purple-200" size={28} />
                   </div>
                   <div className="text-3xl font-bold text-slate-800 mb-1">
                     {calcResults.area.toLocaleString()} <span className="text-lg text-slate-400 font-normal">м²</span>
                   </div>
-                  <p className="text-xs text-slate-500">Коровники и телятники (пятно застройки)</p>
+                  <p className="text-xs text-slate-500">{t.calcSection.cards.areaSub}</p>
                 </div>
 
                 {/* Card 3 */}
                 <div className="backdrop-blur-md bg-white/95 border border-slate-100 shadow-xl rounded-2xl p-6 border-l-4 border-l-amber-500 hover:-translate-y-1 transition duration-300">
                   <div className="flex justify-between items-start mb-2">
-                    <div className="text-slate-500 font-medium text-sm uppercase tracking-wider">Навозоудаление</div>
+                    <div className="text-slate-500 font-medium text-sm uppercase tracking-wider">{t.calcSection.cards.manure}</div>
                     <Droplet className="text-amber-200" size={28} />
                   </div>
                   <div className="text-3xl font-bold text-slate-800 mb-1">
                     {calcResults.manure.toLocaleString()} <span className="text-lg text-slate-400 font-normal">м³</span>
                   </div>
-                  <p className="text-xs text-slate-500">Объем лагун на 6 месяцев</p>
+                  <p className="text-xs text-slate-500">{t.calcSection.cards.manureSub}</p>
                 </div>
 
                 {/* Card 4 */}
                 <div className="backdrop-blur-md bg-white/95 border border-slate-100 shadow-xl rounded-2xl p-6 border-l-4 border-l-green-500 hover:-translate-y-1 transition duration-300">
                   <div className="flex justify-between items-start mb-2">
-                    <div className="text-slate-500 font-medium text-sm uppercase tracking-wider">Кормохранение</div>
+                    <div className="text-slate-500 font-medium text-sm uppercase tracking-wider">{t.calcSection.cards.feed}</div>
                     <Sprout className="text-green-200" size={28} />
                   </div>
                   <div className="text-3xl font-bold text-slate-800 mb-1">
                     {calcResults.feed.toLocaleString()} <span className="text-lg text-slate-400 font-normal">тонн</span>
                   </div>
-                  <p className="text-xs text-slate-500">Годовой запас (Силос + Сенаж)</p>
+                  <p className="text-xs text-slate-500">{t.calcSection.cards.feedSub}</p>
                 </div>
               </div>
 
@@ -675,14 +761,13 @@ const AgroTechApp = () => {
               <div className="mt-8 bg-slate-900 rounded-2xl p-8 text-center md:text-left flex flex-col md:flex-row items-center justify-between shadow-2xl relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]"></div>
                 <div className="relative z-10">
-                  <h3 className="text-white text-xl font-bold mb-2">Нужен точный расчет и смета?</h3>
+                  <h3 className="text-white text-xl font-bold mb-2">{t.calcSection.ctaTitle}</h3>
                   <p className="text-slate-400 text-sm max-w-md">
-                    Мы разработаем полное ПСД: от генплана до прохождения экспертизы.
-                    Оставьте заявку на детальный аудит.
+                    {t.calcSection.ctaDesc}
                   </p>
                 </div>
                 <button onClick={() => setShowModal(true)} className="relative z-10 mt-6 md:mt-0 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 px-8 rounded-full shadow-lg shadow-emerald-900/50 transition-all transform hover:scale-105 active:scale-95 flex items-center gap-3">
-                  <span>Заказать ПСД</span>
+                  <span>{t.calcSection.ctaBtn}</span>
                   <ArrowRight size={20} />
                 </button>
               </div>
@@ -691,32 +776,17 @@ const AgroTechApp = () => {
         </div>
       </section>
 
-      {/* Partners/Brands Mockup */}
-      <section className="py-16 bg-white border-b border-slate-100">
-        <div className="container mx-auto px-4">
-          <p className="text-center text-slate-400 font-semibold uppercase tracking-widest mb-10 text-sm">
-            Мы работаем с лучшими мировыми производителями
-          </p>
-          <div className="flex flex-wrap justify-center items-center gap-12 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-            {/* Simple Text Placeholders for Brands to avoid external logo issues */}
-            <div className="text-2xl font-black text-slate-800 font-serif">Afimilk</div>
-            <div className="text-2xl font-black text-slate-800 italic">DeLaval</div>
-            <div className="text-2xl font-black text-slate-800 tracking-tighter">GEA</div>
-            <div className="text-2xl font-black text-slate-800 font-mono">Lely</div>
-            <div className="text-2xl font-black text-slate-800 uppercase">BouMatic</div>
-          </div>
-        </div>
-      </section>
+
 
       {/* Contact Section */}
       <section id="contacts" className="py-20 bg-slate-50">
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-12">
             <div>
-              <h4 className="text-green-400 font-bold uppercase tracking-wide mb-2">Контакты</h4>
-              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">Свяжитесь с нами</h2>
+              <h4 className="text-green-400 font-bold uppercase tracking-wide mb-2">{t.contacts.label}</h4>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-6">{t.contacts.title}</h2>
               <p className="text-slate-600 mb-8">
-                Оставьте заявку, и наши специалисты свяжутся с вами для консультации по вашему проекту.
+                {t.contacts.desc}
               </p>
 
               <div className="space-y-6">
@@ -725,8 +795,8 @@ const AgroTechApp = () => {
                     <MapPin size={24} />
                   </div>
                   <div>
-                    <h5 className="font-bold text-slate-900">Офис в Алматы</h5>
-                    <p className="text-slate-600">ул. Примерная, 123, Бизнес Центр Агро, офис 405</p>
+                    <h5 className="font-bold text-slate-900">{t.contacts.office}</h5>
+                    <p className="text-slate-600">г. Астана, ул. Кенесары 8, Казахстан</p>
                   </div>
                 </div>
                 <div className="flex items-start">
@@ -734,9 +804,9 @@ const AgroTechApp = () => {
                     <Phone size={24} />
                   </div>
                   <div>
-                    <h5 className="font-bold text-slate-900">Телефоны</h5>
-                    <p className="text-slate-600">+7 777 935 8855</p>
-                    <p className="text-slate-600">+7 (727) 345-67-89</p>
+                    <h5 className="font-bold text-slate-900">{t.contacts.phones}</h5>
+                    <p className="text-slate-600">+7 707 935 88 55</p>
+
                   </div>
                 </div>
                 <div className="flex items-start">
@@ -744,18 +814,18 @@ const AgroTechApp = () => {
                     <Mail size={24} />
                   </div>
                   <div>
-                    <h5 className="font-bold text-slate-900">Email</h5>
-                    <p className="text-slate-600">sales@plutonstroy.kz</p>
+                    <h5 className="font-bold text-slate-900">{t.contacts.email}</h5>
+                    <p className="text-slate-600">too-plutonstroy@mail.ru</p>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="bg-white p-8 rounded-2xl shadow-lg border border-slate-100">
-              <h3 className="text-2xl font-bold mb-6">Оставить заявку</h3>
+              <h3 className="text-2xl font-bold mb-6">{t.contacts.form.title}</h3>
               <form onSubmit={handleModalSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Ваше имя</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t.contacts.form.name}</label>
                   <input
                     type="text"
                     required
@@ -766,7 +836,7 @@ const AgroTechApp = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Телефон</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t.contacts.form.phone}</label>
                   <input
                     type="tel"
                     required
@@ -777,20 +847,20 @@ const AgroTechApp = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Сообщение</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">{t.contacts.form.msg}</label>
                   <textarea
                     rows="4"
                     className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-green-500 focus:border-green-500 outline-none transition"
-                    placeholder="Интересует доильное оборудование..."
+                    placeholder=""
                     value={formData.message}
                     onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   ></textarea>
                 </div>
                 <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition transform hover:-translate-y-1 shadow-md">
-                  Отправить
+                  {t.contacts.form.submit}
                 </button>
                 <p className="text-xs text-slate-500 text-center mt-4">
-                  Нажимаю кнопку, вы соглашаетесь с политикой обработки персональных данных.
+                  {t.contacts.form.disclaimer}
                 </p>
               </form>
             </div>
@@ -804,11 +874,17 @@ const AgroTechApp = () => {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div className="col-span-1 md:col-span-1">
               <div className="flex items-center space-x-2 mb-4 text-white">
-                <Sprout size={24} className="text-green-500" />
+                <div className="w-10 h-10 flex items-center justify-center bg-white rounded-full p-1">
+                  <img
+                    src={new URL('./assets/logo.png', import.meta.url).href}
+                    alt="PlutonStroy Logo"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
                 <span className="text-xl font-bold">PlutonStroy</span>
               </div>
               <p className="text-sm leading-relaxed mb-4">
-                Современные решения для молочных ферм в Казахстане. Качество, проверенное временем.
+                {t.hero.slide1.subtitle}
               </p>
               <div className="flex space-x-4">
                 {/* Social placeholders */}
@@ -819,30 +895,30 @@ const AgroTechApp = () => {
             </div>
 
             <div>
-              <h5 className="text-white font-bold mb-4">Компания</h5>
+              <h5 className="text-white font-bold mb-4">{t.footer.company}</h5>
               <ul className="space-y-2 text-sm">
-                <li><a href="#about" className="hover:text-green-500 transition">О нас</a></li>
-                <li><a href="#partners" className="hover:text-green-500 transition">Партнеры</a></li>
-                <li><a href="#news" className="hover:text-green-500 transition">Новости</a></li>
-                <li><a href="#careers" className="hover:text-green-500 transition">Вакансии</a></li>
+                <li><a href="#about" className="hover:text-green-500 transition">{t.footer.links.about}</a></li>
+                <li><a href="#partners" className="hover:text-green-500 transition">{t.footer.links.partners}</a></li>
+                <li><a href="#news" className="hover:text-green-500 transition">{t.footer.links.news}</a></li>
+                <li><a href="#careers" className="hover:text-green-500 transition">{t.footer.links.careers}</a></li>
               </ul>
             </div>
 
             <div>
-              <h5 className="text-white font-bold mb-4">Решения</h5>
+              <h5 className="text-white font-bold mb-4">{t.footer.solutions}</h5>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-green-500 transition">Доильные залы</a></li>
-                <li><a href="#" className="hover:text-green-500 transition">Системы навозоудаления</a></li>
-                <li><a href="#" className="hover:text-green-500 transition">Комфорт коров</a></li>
-                <li><a href="#" className="hover:text-green-500 transition">Охлаждение молока</a></li>
+                <li><a href="#" className="hover:text-green-500 transition">{t.footer.links2.milking}</a></li>
+                <li><a href="#" className="hover:text-green-500 transition">{t.footer.links2.manure}</a></li>
+                <li><a href="#" className="hover:text-green-500 transition">{t.footer.links2.comfort}</a></li>
+                <li><a href="#" className="hover:text-green-500 transition">{t.footer.links2.cooling}</a></li>
               </ul>
             </div>
 
             <div>
-              <h5 className="text-white font-bold mb-4">Подписка</h5>
-              <p className="text-sm mb-4">Получайте новости агро-индустрии первыми.</p>
+              <h5 className="text-white font-bold mb-4">{t.footer.subscribe}</h5>
+              <p className="text-sm mb-4">{t.footer.subText}</p>
               <div className="flex">
-                <input type="email" placeholder="Email" className="bg-slate-800 border-none rounded-l-lg px-4 py-2 w-full focus:ring-1 focus:ring-green-500 outline-none" />
+                <input type="email" placeholder={t.footer.emailPlaceholder} className="bg-slate-800 border-none rounded-l-lg px-4 py-2 w-full focus:ring-1 focus:ring-green-500 outline-none" />
                 <button className="bg-green-600 text-white px-3 rounded-r-lg hover:bg-green-700 transition">
                   <ChevronRight size={16} />
                 </button>
@@ -851,10 +927,10 @@ const AgroTechApp = () => {
           </div>
 
           <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center text-sm">
-            <p>&copy; 2024 PlutonStroy. Все права защищены.</p>
+            <p>{t.footer.copyright}</p>
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <a href="#" className="hover:text-white transition">Политика конфиденциальности</a>
-              <a href="#" className="hover:text-white transition">Условия использования</a>
+              <a href="#" className="hover:text-white transition">{t.footer.privacy}</a>
+              <a href="#" className="hover:text-white transition">{t.footer.terms}</a>
             </div>
           </div>
         </div>
@@ -876,8 +952,8 @@ const AgroTechApp = () => {
                 <div className="bg-green-100 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
                   <Mail className="text-green-600" size={24} />
                 </div>
-                <h3 className="text-xl font-bold text-slate-900">Свяжитесь с нами</h3>
-                <p className="text-slate-500 text-sm mt-1">Оставьте свои контакты, и мы перезвоним вам в течение 15 минут.</p>
+                <h3 className="text-xl font-bold text-slate-900">{t.contacts.title}</h3>
+                <p className="text-slate-500 text-sm mt-1">{t.contacts.desc}</p>
               </div>
 
               <form onSubmit={handleModalSubmit} className="space-y-4">
@@ -885,7 +961,7 @@ const AgroTechApp = () => {
                   <input
                     type="text"
                     required
-                    placeholder="Ваше имя"
+                    placeholder={t.contacts.form.name}
                     className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-green-500 outline-none"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -895,7 +971,7 @@ const AgroTechApp = () => {
                   <input
                     type="tel"
                     required
-                    placeholder="Номер телефона"
+                    placeholder={t.contacts.form.phone}
                     className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-green-500 outline-none"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
@@ -903,7 +979,7 @@ const AgroTechApp = () => {
                 </div>
                 <div>
                   <textarea
-                    placeholder="Комментарий (необязательно)"
+                    placeholder={t.contacts.form.msg}
                     rows="3"
                     className="w-full px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-green-500 outline-none"
                     value={formData.message}
@@ -911,7 +987,7 @@ const AgroTechApp = () => {
                   ></textarea>
                 </div>
                 <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition">
-                  Отправить заявку
+                  {t.contacts.form.submit}
                 </button>
               </form>
             </div>
